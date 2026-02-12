@@ -29,3 +29,15 @@ const UA_POOL = [
 const randomUA = () => UA_POOL[Math.floor(Math.random() * UA_POOL.length)];
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 const jitter = (ms, spread = 0.35) => { const d = Math.floor(ms * spread); const add = Math.floor(Math.random() * (2 * d + 1)) - d; return Math.max(0, ms + add); };
+
+function askQuestion(query) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    return new Promise(resolve => rl.question(query, ans => {
+        rl.close();
+        resolve(ans);
+    }));
+}
