@@ -24,3 +24,14 @@ const logger = {
     console.log(`---------------------------------------------${colors.reset}\n`);
   },
 };
+const BASE = 'https://beem.me';
+const ACCOUNTS_FILE = path.join(process.cwd(), 'accounts.json');
+const INVITE_FILE = path.join(process.cwd(), 'code.txt');
+const PROXIES_FILE = path.join(process.cwd(), 'proxies.txt');
+const FALLBACK_AVATAR_URLS = [
+    'https://d1yj5w0tyr8x9g.cloudfront.net/fc477051-af2a-11f0-8560-16ffcf7c6dc9/4455-Alexzy01-ppic.jpeg',
+    'https://d1yj5w0tyr8x9g.cloudfront.net/115e64f4-af2a-11f0-8560-16ffcf7c6dc9/4422-seolyoona-ppic.jpeg',
+];
+
+function readJSONSafe(file, def) { if (!fs.existsSync(file)) return def; try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return def; } }
+function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8'); }
