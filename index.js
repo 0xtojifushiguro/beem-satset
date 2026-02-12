@@ -41,3 +41,25 @@ function askQuestion(query) {
         resolve(ans);
     }));
 }
+function readProxies() { if (!fs.existsSync(PROXIES_FILE)) return []; return fs.readFileSync(PROXIES_FILE, 'utf8').split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
+
+function proxyToAgent(p) {
+    try {
+        const proxyRegex = /^([^:]+):([0-9]+)@([^:]+):(.+)$/;
+        const match = p.match(proxyRegex);
+        let proxyUrl = p;
+        if (match) {
+            const host = match[1]; const port = match[2]; const username = match[3]; const password = match[4];
+            proxyUrl = `http://${username}:${password}@${host}:${port}`;
+            logger.info(`Reformatting proxy to: http://****:****@${host}:${port}`);
+        }
+        if (proxyUrl.startsWith('socks4://') || proxyUrl.startsWith('socks5://')) {
+            logger.warn(`Socks proxies are not supported. Skipping proxy: ${p}`);
+            return undefined;
+        }
+        return new HttpsProxyAgent(proxyUrl);
+    } catch (e) {
+        logger.warn(`Bad proxy "${p}", skipping. (${e.message})`);
+        return undefined;
+    }
+}
