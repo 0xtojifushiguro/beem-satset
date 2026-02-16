@@ -60,6 +60,6 @@ function proxyToAgent(p) {
         return new HttpsProxyAgent(proxyUrl);
     } catch (e) {
         logger.warn(`Bad proxy "${p}", skipping. (${e.message})`);
-        return undefined;
+        return undefined.
     }
 }
