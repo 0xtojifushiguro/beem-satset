@@ -229,3 +229,14 @@ async function uploadAvatarOnlineMultipart(client, token, userHandle) {
          throw new Error('Unknown error during avatar processing.');
     }
 }
+async function tryGetTweets(client, token, pageFrom = null) {
+    const vars = { limit: 10 };
+    if (pageFrom != null) vars.from = pageFrom;
+    try {
+        const data = await gql(client, 'fetchTweets', vars, Q_TWEETS, { headers: { authorization: `Bearer ${token}` } });
+        return Array.isArray(data?.tweets) ? data.tweets : [];
+    } catch (e) {
+        logger.warn(`Failed to fetch tweets: ${e.message}`);
+        return [];
+    }
+}
