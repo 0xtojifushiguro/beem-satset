@@ -150,3 +150,9 @@ async function tryCreatePost(client, token, text) {
     for (const t of tries) { try { const d = await gql(client, t.qn, t.vars, t.q, { headers: { authorization: `Bearer ${token}` } }); const id = d?.createTweet?.id || d?.createPost?.id || d?.createStatus?.id; if (id) return id; } catch { /* Ignore error, try next */ } }
     throw new Error('No compatible create post mutation worked');
 }
+function guessExtAndType(buf) {
+    if (buf[0] === 0x89 && buf[1] === 0x50) return { ext: 'png', ctype: 'image/png' };
+    if (buf[0] === 0xFF && buf[1] === 0xD8) return { ext: 'jpeg', ctype: 'image/jpeg' };
+    if (buf[0] === 0x52 && buf[1] === 0x49 && buf[8] === 0x57 && buf[9] === 0x45) return { ext: 'webp', ctype: 'image/webp' };
+    return { ext: 'jpeg', ctype: 'image/jpeg' };
+}
