@@ -298,3 +298,8 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
     try { await gql(client, 'signup', { input: signupInput }, Q_SIGNUP); logger.success('Signup submitted'); }
     catch (e) { logger.warn(`Signup error: ${e.message}. Will try login.`); }
     await sleep(jitter(900, 0.5));
+  logger.loading('Logging in…');
+    const l = await gql(client, 'login', { email, password }, Q_LOGIN);
+    const token = l?.login?.token;
+    if (!token) throw new Error('No token from login');
+    logger.success('Login ok');
