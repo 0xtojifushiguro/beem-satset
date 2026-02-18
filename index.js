@@ -63,3 +63,24 @@ function proxyToAgent(p) {
         return undefined.
     }
 }
+function makeClient(proxyStr) {
+    const agent = proxyStr ? proxyToAgent(proxyStr) : undefined;
+    const instance = axios.create({
+        baseURL: BASE,
+        timeout: 60000, 
+        httpAgent: agent, httpsAgent: agent,
+        validateStatus: (s) => s >= 200 && s < 505 
+    });
+    instance.interceptors.request.use((config) => {
+        config.headers = config.headers || {};
+        config.headers['accept'] = '*/*';
+        config.headers['content-type'] = config.headers['content-type'] || 'application/json';
+        config.headers['user-agent'] = randomUA();
+        config.headers['sec-ch-ua'] = '"Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"';
+        config.headers['sec-ch-ua-platform'] = '"Windows"';
+        config.headers['sec-ch-ua-mobile'] = '?0';
+        config.headers['Referer'] = config.headers['Referer'] || BASE + '/';
+        return config;
+    });
+    return instance;
+}
