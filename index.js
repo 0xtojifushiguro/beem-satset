@@ -136,6 +136,7 @@ const Q_USER_BY_HANDLE = `query fetchUser($handle: String!) { user(handle: $hand
 const M_UPDATE_USER = `mutation updateUser($input: UpdateUserInput!) { updateUser(input: $input) { name bio location website photo_url twitter_handle __typename } }`;
 const M_CREATE_FOLLOW = `mutation createFollow($userId: Int!) { createFollow(userId: $userId) { followed { is_followed followers_count __typename } __typename } }`;
 const TWEET_FRAGMENT = ` fragment tweetFragment on Tweet { id reply_to_id content photos { image alt __typename } is_reposted is_liked is_reported replies_count reposts_count favorites_count reports_count created_at is_edited deleted_at is_content_hidden is_image_hidden languages open_graph_metadata { title description url __typename } block_reason quoting { id content photos { image alt __typename } created_at deleted_at is_content_hidden is_image_hidden block_reason parent { user { handle block_reason __typename } __typename } user { id handle name photo_url is_verified is_twitter_legacy block_reason is_muted __typename } __typename } user { id handle name photo_url is_verified is_twitter_legacy block_reason is_muted __typename } __typename }`;
+        
 const Q_TWEETS = ` query fetchTweets($from: Int, $limit: Int){ tweets(from: $from, limit: $limit){ id content created_at is_reposted is_liked replies_count reposts_count favorites_count user { id handle name photo_url __typename } __typename } }`;
 const M_CREATE_LIKE = `mutation createLike($tweetId: Int!) { createLike(tweetId: $tweetId) { tweet { is_liked favorites_count __typename } __typename } }`;
 const M_CREATE_REPOST = `mutation createRepost($tweetId: Int!) { createRepost(tweetId: $tweetId) { ...tweetFragment reposting { ...tweetFragment __typename } __typename } } ${TWEET_FRAGMENT}`;
@@ -156,3 +157,27 @@ function guessExtAndType(buf) {
     if (buf[0] === 0x52 && buf[1] === 0x49 && buf[8] === 0x57 && buf[9] === 0x45) return { ext: 'webp', ctype: 'image/webp' };
     return { ext: 'jpeg', ctype: 'image/jpeg' };
 }
+async function uploadAvatarOnlineMultipart(client, token, userHandle) {
+    const imageUrl = `https://picsum.photos/seed/${uuidv4()}/256/256.jpg`;
+    let buf, ctype, ext, filename, uploadError = null;
+
+    try {
+        logger.loading(`Fetching avatar source from: ${imageUrl.slice(0, 30)}...`);
+        const img = await client.get(imageUrl, { responseType: 'arraybuffer', timeout: 30000 });
+        buf = Buffer.from(img.data);
+        ({ ext, ctype } = guessExtAndType(buf));
+        filename = `image_${uuidv4().substring(0, 8)}.${ext}`; 
+
+        const form = new FormData();
+        const operations = JSON.stringify({ operationName: "updateAvatar", variables: { file: null }, query: "mutation updateAvatar($file: Upload!) { updateAvatar(file: $file) }" });
+        const map = JSON.stringify({ "1": ["variables.file"] });
+        form.append('operations', operations); form.append('map', map); form.append('1', buf, { filename, contentType: ctype });
+
+        logger.loading(`Uploading avatar ${filename} (${(buf.length / 1024).toFixed(1)} KB)...`);
+        const res = await client.post('/gql/query', form, {
+            headers: { ...form.getHeaders(), 'authorization': `Bearer ${token}`, 'accept': '*/*', 'Referer': `${BASE}/${userHandle}` },
+            maxContentLength: Infinity, maxBodyLength: Infinity,
+            validateStatus: (s) => s >= 200 && s < 505 
+        });
+
+    
