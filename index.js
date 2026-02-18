@@ -200,3 +200,32 @@ async function uploadAvatarOnlineMultipart(client, token, userHandle) {
                 return avatarUrl; 
             }
         }
+    } catch (fetchOrBuildError) {
+        uploadError = fetchOrBuildError; 
+        logger.warn(`Avatar fetch/build failed: ${fetchOrBuildError.message}. Trying fallback...`);
+    }
+
+    if (uploadError && FALLBACK_AVATAR_URLS.length > 0) {
+        const fallbackUrl = FALLBACK_AVATAR_URLS[Math.floor(Math.random() * FALLBACK_AVATAR_URLS.length)];
+        try {
+            logger.loading(`Attempting to set avatar to fallback URL: ${fallbackUrl.slice(0, 50)}...`);
+            const fallbackInput = { photo_url: fallbackUrl };
+            
+            await gql(client, 'updateUser', { input: fallbackInput }, M_UPDATE_USER, {
+                headers: { authorization: `Bearer ${token}` }
+            });
+            logger.success(`Avatar successfully set using fallback URL.`);
+            return fallbackUrl; 
+        } catch (fallbackGqlError) {
+            logger.error(`Setting fallback avatar URL failed: ${fallbackGqlError.message}`);
+            
+            throw uploadError;
+        }
+    } else if (uploadError) {
+        
+        throw uploadError;
+    } else {
+         
+         throw new Error('Unknown error during avatar processing.');
+    }
+}
