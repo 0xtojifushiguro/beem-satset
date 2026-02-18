@@ -140,3 +140,13 @@ const Q_TWEETS = ` query fetchTweets($from: Int, $limit: Int){ tweets(from: $fro
 const M_CREATE_LIKE = `mutation createLike($tweetId: Int!) { createLike(tweetId: $tweetId) { tweet { is_liked favorites_count __typename } __typename } }`;
 const M_CREATE_REPOST = `mutation createRepost($tweetId: Int!) { createRepost(tweetId: $tweetId) { ...tweetFragment reposting { ...tweetFragment __typename } __typename } } ${TWEET_FRAGMENT}`;
 const M_CREATE_TWEET_REPLY = `mutation createTweet($input: CreateTweetInput!) { createTweet(input: $input) { ...tweetFragment __typename } } ${TWEET_FRAGMENT}`;
+async function tryCreatePost(client, token, text) {
+    const tries = [
+        { qn: 'createTweet', vars: { content: text }, q: `mutation createTweet($content: String!) { createTweet(content: $content) { id __typename } }` },
+        { qn: 'createTweet', vars: { input: { content: text } }, q: `mutation createTweet($input: CreateTweetInput!) { createTweet(input: $input) { id __typename } }` },
+        { qn: 'createPost', vars: { content: text }, q: `mutation createPost($content: String!) { createPost(content: $content) { id __typename } }` },
+        { qn: 'createStatus', vars: { text }, q: `mutation createStatus($text: String!) { createStatus(text: $text) { id __typename } }` },
+    ];
+    for (const t of tries) { try { const d = await gql(client, t.qn, t.vars, t.q, { headers: { authorization: `Bearer ${token}` } }); const id = d?.createTweet?.id || d?.createPost?.id || d?.createStatus?.id; if (id) return id; } catch { /* Ignore error, try next */ } }
+    throw new Error('No compatible create post mutation worked');
+}
