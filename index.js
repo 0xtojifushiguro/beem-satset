@@ -123,3 +123,9 @@ async function gql(client, operationName, variables, query, opts = {}) {
         if (res.data.errors) {
             throw new Error(`GQL ERR: ${JSON.stringify(res.data.errors)}`);
         }
+function randomEmail() { const u = faker.internet.userName().replace(/[^\w]/g, '').slice(0, 12) + Math.floor(Math.random()*10000); return `${u}@${faker.internet.domainName()}`.toLowerCase(); }
+function randomPassword() { return faker.internet.password(12, false, /[A-Za-z0-9]/) + '!' + Math.floor(Math.random()*1000); }
+function randomHandle() { const base = faker.internet.userName().replace(/[^\w]/g, '').toLowerCase(); return (base + Math.floor(Math.random() * 10_000)).slice(0, 15); }
+function randomBio() { const bios = [ 'building weird internet stuff', 'airdrop enjoyooor', 'onchain everyday, touch grass sometimes', 'ships > talks', 'gm gm', 'pixel vibes + coffee', 'learning, breaking, fixing', 'insiders' ]; return bios[Math.floor(Math.random()*bios.length)]; }
+function randomComment() { const comments = [ 'clean take fr','facts 🔥','this goes crazy','nice thread, bookmarked', 'respect the grind','solid alpha tbh','haha this!','underrated point' ]; return comments[Math.floor(Math.random()*comments.length)]; }
+function randomPostText() { const seeds = [ 'gm beemers ☀️ shipping mode on', 'testing beem waters… hello world 👋', 'builders build. back to it.', 'note to self: iterate > perfect', 'tiny win today, big steps tomorrow', 'random thought: distribution > discovery', 'vibes immaculate rn' ]; let text = seeds[Math.floor(Math.random()*seeds.length)]; if (Math.random() < 0.35) text += ' #' + faker.hacker.noun(); return text; }
