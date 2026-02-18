@@ -289,3 +289,6 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
     const email = randomEmail();
     const password = randomPassword();
     let userHandle = handle;
+  logger.step(`Account #${index + 1}`);
+    logger.info(`Using proxy: ${proxyStr || '(none)'}`);
+    logger.info(`Handle: ${handle} | Email: ${email}`);
