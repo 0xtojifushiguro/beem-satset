@@ -181,3 +181,22 @@ async function uploadAvatarOnlineMultipart(client, token, userHandle) {
         });
 
     
+    if (res.status === 422) {
+            uploadError = new Error(`Upload failed with 422: ${JSON.stringify(res.data)}`);
+            logger.warn(`Avatar upload failed (422 Unprocessable). Trying fallback...`);
+        } else if (res.status >= 400) {
+            uploadError = new Error(`Upload HTTP ${res.status}: ${JSON.stringify(res.data)}`);
+            logger.warn(`Avatar upload failed (${res.status}). Trying fallback...`);
+        } else if (res.data.errors) {
+            uploadError = new Error(`Upload GQL ERR: ${JSON.stringify(res.data.errors)}`);
+            logger.warn(`Avatar upload failed (GQL Error). Trying fallback...`);
+        } else {
+            const avatarUrl = res.data?.data?.updateAvatar;
+            if (!avatarUrl) {
+                 uploadError = new Error('Upload succeeded but no URL was returned.');
+                 logger.warn(`${uploadError.message} Trying fallback...`);
+            } else {
+                logger.success(`Avatar updated from Picsum (${ext}). URL: ${avatarUrl}`);
+                return avatarUrl; 
+            }
+        }
