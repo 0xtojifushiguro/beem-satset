@@ -35,6 +35,28 @@ function askQuestion(query) {
         input: process.stdin,
         output: process.stdout, 
     });
+        return res.data.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.code === 'ECONNABORTED' || error.response?.status === 504) {
+                 if (operationName === 'createLike' || operationName === 'createRepost' || operationName === 'createTweet') {
+                     throw new Error(`GQL Gateway Timeout (504): Operation ${operationName}`);
+                 }
+                throw new Error(`GQL Timeout or Gateway Error (504): Operation ${operationName}`);
+
+            } else if (error.response) {
+                 
+                if (operationName === 'updateAvatar' && error.response.status === 422) {
+                     return { errorStatus: error.response.status, errorData: error.response.data };
+                 }
+                throw new Error(`GQL HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`);
+            } else {
+                throw new Error(`GQL Network Error: ${error.message}`);
+            }
+        }
+        throw error;
+    }
+}
 
     return new Promise(resolve => rl.question(query, ans => {
         rl.close();
