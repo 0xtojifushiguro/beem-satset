@@ -263,3 +263,20 @@ async function interactOnTweets(client, token, tweets) {
         } catch (e) {
             logger.warn(`Repost tweet #${tweetId} failed: ${e.message}`);
         }
+        if (tweetAuthorId) {
+            try {
+                const content = randomComment();
+                const replyInput = { content, photos: [], reply_to_id: tweetId, reply_to_user_id: tweetAuthorId };
+                await gql(client, 'createTweet', { input: replyInput }, M_CREATE_TWEET_REPLY, {
+                    headers: { authorization: `Bearer ${token}`, Referer: `${BASE}/${authorHandle}/status/${tweetId}` }
+                });
+                logger.info(`Replied to tweet #${tweetId}: "${content}"`);
+                await sleep(jitter(1300, 0.5));
+            } catch (e) {
+                logger.warn(`Reply to tweet #${tweetId} failed: ${e.message}`);
+            }
+        } else {
+            logger.warn(`Skipping reply to tweet #${tweetId} because author ID is missing.`);
+        }
+    }
+}
