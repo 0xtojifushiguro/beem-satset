@@ -84,3 +84,20 @@ function makeClient(proxyStr) {
     });
     return instance;
 }
+async function gql(client, operationName, variables, query, opts = {}) {
+    try {
+        const res = await client.post('/gql/query', { operationName, variables, query }, opts);
+
+        if (res.status >= 400) {
+            if (operationName === 'updateAvatar' && res.status === 422) {
+                return { errorStatus: res.status, errorData: res.data };
+            }
+             if ((operationName === 'createLike' || operationName === 'createRepost' || operationName === 'createTweet') && res.status === 504) {
+                 throw new Error(`GQL Gateway Timeout (504): Operation ${operationName}`);
+             }
+            throw new Error(`GQL HTTP ${res.status}: ${JSON.stringify(res.data)}`);
+        }
+
+        if (res.data.errors) {
+            throw new Error(`GQL ERR: ${JSON.stringify(res.data.errors)}`);
+        }
