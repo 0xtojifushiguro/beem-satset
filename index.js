@@ -240,3 +240,26 @@ async function tryGetTweets(client, token, pageFrom = null) {
         return [];
     }
 }
+async function interactOnTweets(client, token, tweets) {
+    for (const t of tweets) {
+        const tweetId = t.id;
+        const tweetAuthorId = t.user?.id;
+        const authorHandle = t.user?.handle || 'user';
+
+        if (!tweetId) continue;
+
+        try {
+            await gql(client, 'createLike', { tweetId }, M_CREATE_LIKE, { headers: { authorization: `Bearer ${token}` } });
+            logger.info(`Liked tweet #${tweetId}`);
+            await sleep(jitter(900, 0.5));
+        } catch (e) {
+            logger.warn(`Like tweet #${tweetId} failed: ${e.message}`);
+        }
+
+        try {
+            await gql(client, 'createRepost', { tweetId }, M_CREATE_REPOST, { headers: { authorization: `Bearer ${token}` } });
+            logger.info(`Reposted tweet #${tweetId}`);
+            await sleep(jitter(1100, 0.5));
+        } catch (e) {
+            logger.warn(`Repost tweet #${tweetId} failed: ${e.message}`);
+        }
