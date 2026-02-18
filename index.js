@@ -292,3 +292,9 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
   logger.step(`Account #${index + 1}`);
     logger.info(`Using proxy: ${proxyStr || '(none)'}`);
     logger.info(`Handle: ${handle} | Email: ${email}`);
+
+    logger.loading('Signing up…');
+    const signupInput = { handle, email, password, invite_key: inviteCode };
+    try { await gql(client, 'signup', { input: signupInput }, Q_SIGNUP); logger.success('Signup submitted'); }
+    catch (e) { logger.warn(`Signup error: ${e.message}. Will try login.`); }
+    await sleep(jitter(900, 0.5));
