@@ -303,3 +303,24 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
     const token = l?.login?.token;
     if (!token) throw new Error('No token from login');
     logger.success('Login ok');
+  try {
+        const me = await gql(client, 'fetchMe', {}, Q_ME, { headers: { authorization: `Bearer ${token}` } });
+        const my = me?.me || {};
+        userHandle = my.handle || handle; 
+        logger.info(`UID ${my.id || 'N/A'} | handle @${userHandle} | posts ${my.posts_count ?? 'N/A'}`);
+    } catch (e) {
+        logger.warn(`Failed to fetch user details after login: ${e.message}. Using generated handle @${userHandle}`);
+    }
+
+    await firebaseOptional(client, token);
+
+    const safeName = (faker.name.findName() || userHandle).replace(/[^\p{L}\s'-]/gu, '').trim().slice(0, 24) || userHandle;
+    const profileInput = { name: safeName, bio: randomBio().slice(0, 140), location: (faker.address.country() || 'earth').slice(0, 24), website: '' };
+    try { await gql(client, 'updateUser', { input: profileInput }, M_UPDATE_USER, { headers: { authorization: `Bearer ${token}` } }); logger.success(`Profile updated`); }
+    catch (e1) { logger.warn(`updateUser failed once: ${e1.message}. Retrying minimal...`); try { const minimal = { name: profileInput.name, bio: profileInput.bio }; await gql(client, 'updateUser', { input: minimal }, M_UPDATE_USER, { headers: { authorization: `Bearer ${token}` } }); logger.success(`Profile updated (minimal)`); } catch (e2) { logger.error(`Minimal profile update failed: ${e2.message}`); } }
+
+    try {
+        await uploadAvatarOnlineMultipart(client, token, userHandle);
+    } catch (e) {
+        logger.warn(`Continuing without avatar due to upload error: ${e.message}`);
+    }
