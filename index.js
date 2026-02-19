@@ -324,3 +324,34 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
     } catch (e) {
         logger.warn(`Continuing without avatar due to upload error: ${e.message}`);
     }
+    await ensureFollow(client, token, 'vikitoshi', 10);
+
+    logger.loading('Fetching feed to find one tweet for interaction...');
+    let tweets = await tryGetTweets(client, token, null);
+    if (tweets.length > 0) {
+        
+        const tweetToInteract = tweets[0];
+        logger.loading(`Interacting with 1 tweet (ID: #${tweetToInteract.id})…`);
+        
+        await interactOnTweets(client, token, [tweetToInteract]); 
+        logger.success('Single tweet interaction done');
+    } else {
+        logger.warn('No feed tweets found; skipping interaction.');
+    }
+
+    logger.loading('Creating one random post...');
+    const content = randomPostText();
+    try { 
+        const id = await tryCreatePost(client, token, content); 
+        logger.success(`Posted (#${id}): "${content.slice(0, 70)}"`); 
+    }
+    catch (e) { 
+        logger.warn(`Post failed (will continue): ${e.message}`); 
+    }
+
+    return {
+        id: (await gql(client, 'fetchMe', {}, Q_ME, { headers: { authorization: `Bearer ${token}` } }))?.me?.id || null,
+        handle: userHandle, email, password, token,
+        created_at: new Date().toISOString(), proxy: proxyStr || null
+    };
+}
