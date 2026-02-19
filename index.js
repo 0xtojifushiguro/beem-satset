@@ -355,3 +355,44 @@ async function createAndRunAccount(index, inviteCode, proxyStr) {
         created_at: new Date().toISOString(), proxy: proxyStr || null
     };
 }
+(async function main() {
+    try {
+        logger.banner();
+
+        if (!fs.existsSync(INVITE_FILE)) { logger.error(`Missing ${INVITE_FILE}. Put your invite code inside.`); process.exit(1); }
+        const inviteCode = fs.readFileSync(INVITE_FILE, 'utf8').trim();
+        if (!inviteCode) { logger.error(`Invite code is empty in ${INVITE_FILE}`); process.exit(1); }
+
+        const countStr = await askQuestion('How many accounts to create? ');
+        const count = Number(countStr);
+        if (!Number.isInteger(count) || count <= 0) { logger.error('Please input a valid positive number.'); process.exit(1); }
+
+        const proxies = readProxies();
+        if (proxies.length) logger.info(`Loaded ${proxies.length} proxies`);
+        else logger.warn('No proxies loaded; proceeding without proxies.');
+
+        const existing = readJSONSafe(ACCOUNTS_FILE, []);
+        const results = [];
+
+        for (let i = 0; i < count; i++) {
+            const proxyStr = proxies.length ? proxies[i % proxies.length] : undefined;
+            try {
+                const acct = await createAndRunAccount(i, inviteCode, proxyStr);
+                results.push(acct);
+                existing.push(acct);
+                writeJSON(ACCOUNTS_FILE, existing);
+                logger.success(`Saved account @${acct.handle} to accounts.json`);
+            } catch (e) {
+                logger.error(`Account #${i + 1} failed: ${e.message}`);
+            }
+            await sleep(jitter(2500, 0.5));
+        }
+
+        logger.step('Summary');
+        results.forEach((r, idx) => { logger.info(`#${idx + 1} @${r.handle} | ${r.email} | uid=${r.id || 'N/A'}`); });
+        logger.success(`All done. Stored ${existing.length} accounts in accounts.json`);
+    } catch (e) {
+        logger.error(e.stack || e.message);
+        process.exit(1);
+    }
+})();
